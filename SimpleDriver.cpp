@@ -169,6 +169,7 @@ SimpleDriver::wDrive(CarState cs)
 		 
 		float temp_steer = steer;
 		temp_steer += keyboard_steering(); 
+		cruise_control(speedx);
 		if (temp_steer >= 0) 
 			steer = min(temp_steer, 1.0f);
 		else if (temp_steer < 0) 
@@ -215,8 +216,8 @@ SimpleDriver::filterABS(CarState &cs,float brake)
     }
     
     // check brake is not negative, otherwise set it to zero
-    if (brake<0)
-    	return 0;
+    if (brake<0.0f)
+    	return 0.0f;
     else
     	return brake;
 }
@@ -238,13 +239,17 @@ SimpleDriver::keyboard_steering()
 {
 	float steer;
 	if (GetKeyState(VK_LEFT) < 0) {
-		steer = 0.005f;
+		steer = 0.05f;
+		if (previous_steer < 0)
+			steer -= previous_steer;
 	}
 	else if (GetKeyState(VK_RIGHT) < 0) {
-		steer = -0.005f;
+		steer = -0.05f;
+		if (previous_steer > 0)
+			steer -= previous_steer;
 	}
 	else {
-		steer = 0.0f;
+		steer = -previous_steer;
 	}
 	return steer;
 }
@@ -252,10 +257,16 @@ SimpleDriver::keyboard_steering()
 void
 SimpleDriver::cruise_control(float current_speed)
 {
-	const float KP = 0.02;
+	const float KP = 0.1f;
 	float error = TARGET_SPEED - current_speed;
-	if (error >= 0)
-		accel = min(error * KP, 1.0);
-	else if (error < 0)
-		brake = max(error * KP, -1.0);
+	if (error >= 0.0f)
+	{
+		accel = min(error * KP, 1.0f);
+		brake = 0;
+	}
+	else if (error < 0.0f)
+	{
+		accel = 0;
+		brake = min(-error * KP, 1.0f);
+	}
 }

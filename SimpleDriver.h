@@ -105,7 +105,7 @@ private:
 
 	// Cruise Control : Hwancheol
 	void cruise_control(float curreent_speed);
-	const float TARGET_SPEED = 60;
+	const float TARGET_SPEED = 90.0f;
 	float accel;
 	float brake;
 
