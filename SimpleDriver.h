@@ -99,7 +99,16 @@ private:
 	// Apply an ABS filter to brake command
 	float filterABS(CarState &cs,float brake);
 
-	
+	// Steering with Keyboard : Hwancheol
+	float keyboard_steering();
+	float previous_steer = 0;
+
+	// Cruise Control : Hwancheol
+	void cruise_control(float curreent_speed);
+	const float TARGET_SPEED = 60;
+	float accel;
+	float brake;
+
 };
 
 #endif /*SIMPLEDRIVER_H_*/

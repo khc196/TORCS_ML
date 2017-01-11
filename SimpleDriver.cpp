@@ -14,6 +14,14 @@
  *                                                                         *
  ***************************************************************************/
 #include "SimpleDriver.h"
+#include <cstdio>
+#include <conio.h>
+#include <windows.h>
+
+#define LEFT 75
+#define RIGHT 77
+#define UP 72
+#define DOWN 80
 
 
 /* Gear Changing Constants*/
@@ -138,10 +146,8 @@ SimpleDriver::wDrive(CarState cs)
 		// 자동차 제어관련 변수 
         int gear = getGear(cs); // 기어는 자동이다. 컴퓨터가 자동으로 결정해 준다. 수동으로 기어를 조작하고 싶으면 gear 값을 바꾸어주면 된다. 
 		                        // -1은 후진이고, 0은 중립, 1~7단까지 있다. 
-
-        float accel;   // 가속 패달이다. 최소 0 최대 1이다. 
-		float brake;   // 브레이크 패달이다. 최소 0 최대 1이다. 
-		float steer;   // 자동차의 핸들을 조정한다. -1부터 1까지의 값을 가진다. 
+ 
+		float steer = previous_steer;   // 자동차의 핸들을 조정한다. -1부터 1까지의 값을 가진다. 
 		               // -1은 완전히 오른쪽으로 돌린 것이다, +1은 완전히 왼쪽으로 돌린 것이다. 
 		               // 차의 바퀴는 최대 45도까지 방향 전환이 가능하다. 
 
@@ -159,13 +165,16 @@ SimpleDriver::wDrive(CarState cs)
 		
 		
 		
-		// 여기서부터 수정하세요. 
-				
-		accel = 0.3f; 
-		brake = 0.0f; 
-		steer = 0.0f; 
-
-		// 여기까지만 수정하세요. 
+		/* Hwancheol Start */
+		 
+		float temp_steer = steer;
+		temp_steer += keyboard_steering(); 
+		if (temp_steer >= 0) 
+			steer = min(temp_steer, 1.0f);
+		else if (temp_steer < 0) 
+			steer = max(temp_steer, -1.0f);
+		previous_steer = steer;
+		/* Hwancheol End */ 
 
 
 
@@ -224,3 +233,29 @@ SimpleDriver::onRestart()
     cout << "Restarting the race!" << endl;
 }
 
+float
+SimpleDriver::keyboard_steering()
+{
+	float steer;
+	if (GetKeyState(VK_LEFT) < 0) {
+		steer = 0.005f;
+	}
+	else if (GetKeyState(VK_RIGHT) < 0) {
+		steer = -0.005f;
+	}
+	else {
+		steer = 0.0f;
+	}
+	return steer;
+}
+
+void
+SimpleDriver::cruise_control(float current_speed)
+{
+	const float KP = 0.02;
+	float error = TARGET_SPEED - current_speed;
+	if (error >= 0)
+		accel = min(error * KP, 1.0);
+	else if (error < 0)
+		brake = max(error * KP, -1.0);
+}
