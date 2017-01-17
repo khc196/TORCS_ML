@@ -166,15 +166,33 @@ SimpleDriver::wDrive(CarState cs)
 		
 		
 		/* Hwancheol Start */
-		 
+		if (GetKeyState(0x43) < 0) 
+			setMode_cc();
+
+		if (GetKeyState(0x4C) < 0) {
+			setMode_lkas();
+		}
+
 		float temp_steer = steer;
-		temp_steer += keyboard_steering(); 
-		cruise_control(speedx);
+		if (lkas_mode_on) 
+			temp_steer = lane_keeping(angle, track, speedx);
+		else 
+			temp_steer += keyboard_steering();
+		
+		if (cc_mode_on)
+			cruise_control(speedx);
+		else
+			keyboard_speedcontrol();
+
 		if (temp_steer >= 0) 
 			steer = min(temp_steer, 1.0f);
 		else if (temp_steer < 0) 
 			steer = max(temp_steer, -1.0f);
 		previous_steer = steer;
+
+	
+		print_state(track, angle);
+		
 		/* Hwancheol End */ 
 
 
@@ -253,11 +271,27 @@ SimpleDriver::keyboard_steering()
 	}
 	return steer;
 }
-
+void
+SimpleDriver::keyboard_speedcontrol()
+{
+	if (GetKeyState(VK_UP) < 0) {
+		accel += 0.05;
+	}
+	else if (GetKeyState(VK_DOWN) < 0) {
+		brake += 0.05;
+	}
+	else {
+		if (accel > 0)
+			accel -= accel;
+		else if (brake > 0)
+			brake -= brake;
+	}
+	
+}
 void
 SimpleDriver::cruise_control(float current_speed)
 {
-	const float KP = 0.1f;
+	const float KP = 0.15f;
 	float error = TARGET_SPEED - current_speed;
 	if (error >= 0.0f)
 	{
@@ -268,5 +302,53 @@ SimpleDriver::cruise_control(float current_speed)
 	{
 		accel = 0;
 		brake = min(-error * KP, 1.0f);
+	}
+}
+// current_speed - km/h, distance_track - m, angle - -1 ~ 1, 
+float
+SimpleDriver::lane_keeping(float angle, float* distance_track, float current_speed)
+{
+	float steer_angle;
+	short trackPos;
+	float total_width = distance_track[0] + distance_track[18];
+
+	if (distance_track[0] - distance_track[18] >= (total_width/2.0f))
+		trackPos = 0;
+	else trackPos = 1;
+	steer_angle = abs_f(angle) * 45 * 180 / PI + atan(LANE_KEEPING_CONST * (abs_f(distance_track[0] - distance_track[18] - (total_width/2.0f))) / (current_speed * 1000.0f / 3600.0f));
+	if (trackPos == 1) return -steer_angle;
+	return steer_angle;
+}
+
+float
+SimpleDriver::abs_f(float a) {
+	if (a >= 0.0f) return a;
+	else return -a;
+}
+
+void
+SimpleDriver::setMode_cc() {
+	while (GetKeyState(0x43) < 0) {}
+	cc_mode_on = !cc_mode_on;
+	if (cc_mode_on)
+		cout << "Cruise Control On" << endl;
+	else
+		cout << "Cruise Control Off" << endl;
+}
+void
+SimpleDriver::setMode_lkas() {
+	while (GetKeyState(0x4C) < 0) {}
+	lkas_mode_on = !lkas_mode_on;
+	if (lkas_mode_on)
+		cout << "Lane Keeping On" << endl;
+	else
+		cout << "Lane Keeping Off" << endl;
+}
+
+void
+SimpleDriver::print_state(float* track, float angle) {
+	if (GetKeyState(0x50) < 0) {
+		while (GetKeyState(0x50) < 0) {}
+		cout << "왼쪽 거리 : " << track[0] << "\n오른쪽 거리 : " << track[18] << "\n각도 : " << abs_f(angle) * 45 * PI << endl;
 	}
 }

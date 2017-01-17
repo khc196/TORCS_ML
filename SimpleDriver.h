@@ -103,11 +103,27 @@ private:
 	float keyboard_steering();
 	float previous_steer = 0;
 
+	// Speed Control with Keyboard : Hwancheol
+	void keyboard_speedcontrol();
+
+
 	// Cruise Control : Hwancheol
-	void cruise_control(float curreent_speed);
-	const float TARGET_SPEED = 90.0f;
+	void cruise_control(float current_speed);
+	const float TARGET_SPEED = 40.0f;
 	float accel;
 	float brake;
+	bool cc_mode_on = false;
+
+	// Lane Keeping Assist System : Hwancheol
+	float lane_keeping(float angle, float* distance_track, float current_speed);
+	float const LANE_KEEPING_CONST = 0.000001f;
+	float abs_f(float a);
+	bool lkas_mode_on = false;
+	void setMode_cc();
+	void setMode_lkas();
+
+
+	void print_state(float* track, float angle);
 
 };
 
